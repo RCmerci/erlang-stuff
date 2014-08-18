@@ -26,8 +26,16 @@
          keysearch/3,
          keysort/2,
          keystore/4,
-         keytake/3]).
--export([get_reverse_list/2]).
+         keytake/3,
+         last/1,
+         map/2,
+         mapfoldl/3,
+         mapfoldr/3,
+         max/1,
+         member/2,
+         merge/1]).
+-export([get_reverse_list/2,
+         for_merge/2]).
 
 all(_, []) -> true;
 all(Pred, [First|Rest]) ->
@@ -291,3 +299,66 @@ keytake(Key, N, List) when N>=1 ->
         _ ->
             error(wrong)
     end.
+
+
+last([Aim]) -> Aim;
+last([_First|Rest]) -> last(Rest).
+
+
+map(_Fun, []) ->[];
+map(Fun, [First|Rest]) -> [Fun(First) |map(Fun, Rest)].
+
+
+mapfoldl(_Fun, Acc0, []) -> {[], Acc0};
+mapfoldl(Fun, Acc0, [First|Rest]) ->
+    {B, AccOut} = Fun(First, Acc0),
+    {List, Acc} = mapfoldl(Fun, AccOut, Rest),
+    {[B | List], Acc}.
+
+
+mapfoldr(Fun, Acc0, List) ->
+    Rlist = reverse(List),
+    {A,B} = mapfoldl(Fun, Acc0, Rlist),
+    {reverse(A), B}.
+
+
+for_max(Res, []) -> Res;
+for_max(Res, [First|Rest]) when First>Res ->
+    for_max(First, Rest);
+for_max(Res, [First|Rest]) when First=<Res ->
+    for_max(Res, Rest).
+
+max([First|Rest]) ->
+    for_max(First, Rest).
+
+
+member(_Elem, []) -> false;
+member(Elem, [First|_Rest]) when Elem =:= First -> true;
+member(Elem, [_First|Rest]) -> member(Elem, Rest).
+
+
+for_merge(Min, []) -> {Min, []};
+for_merge(Min, [First|Rest]) when length(First)>0 ->
+    [FirstElem|RestElems] = First,
+    case FirstElem < Min of
+        true ->
+            {MinElem, ResLists} = for_merge(FirstElem, Rest),
+            case MinElem /= FirstElem of
+                true ->
+                    {MinElem, [First | ResLists]};
+                false ->
+                    {MinElem, [RestElems | ResLists]}
+            end;
+        false ->
+            {MinElem, ResLists} = for_merge(Min, Rest),
+            {MinElem, [First | ResLists]}
+    end;
+for_merge(Min, [_First|Rest]) ->
+    {MinElem, ResLists} = for_merge(Min, Rest),
+    {MinElem, [[] | ResLists]}.
+
+merge([]) -> [];
+merge([[]|Rest]) -> merge(Rest);
+merge([[FirstElem|RestElems]|Rest]) ->
+    {Min, ResLists} = for_merge(FirstElem+1, [[FirstElem|RestElems]|Rest]),
+    [Min | merge(ResLists)].
