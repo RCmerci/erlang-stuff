@@ -3,7 +3,6 @@
          any/2,
          append/1,
          append/2,
-         reverse/1,
          concat/1,
          delete/2,
          dropwhile/2,
@@ -33,7 +32,16 @@
          mapfoldr/3,
          max/1,
          member/2,
-         merge/1]).
+         merge/1,
+         merge/2,
+         merge/3,
+         min/1,
+         nth/2,
+         nthtail/2,
+         partition/2,
+         prefix/2,
+         reverse/1,
+         reverse/2]).
 -export([get_reverse_list/2,
          for_merge/2]).
 
@@ -68,6 +76,10 @@ get_reverse_list(Reversed, Source) ->
 
 reverse(List1) ->
     get_reverse_list([], List1).
+
+reverse(List, Tail) ->
+    append(reverse(List), Tail).
+
 
 for_append([], Res) -> Res;
 for_append(Rlist1, Res) ->
@@ -362,3 +374,55 @@ merge([[]|Rest]) -> merge(Rest);
 merge([[FirstElem|RestElems]|Rest]) ->
     {Min, ResLists} = for_merge(FirstElem+1, [[FirstElem|RestElems]|Rest]),
     [Min | merge(ResLists)].
+
+merge(List1, List2) ->
+    merge([List1, List2]).
+
+merge(_Fun, [], List2) -> List2;
+merge(_Fun, List1, []) -> List1;
+merge(Fun, [F1|R1], [F2|R2]) ->
+    case Fun(F1, F2) of
+        true ->
+            [F1 | merge(Fun, R1, [F2|R2])];
+        false ->
+            [F2 | merge(Fun, [F1|R1], R2)]
+    end.
+
+
+min([Res]) -> Res;
+min([First|[Sec|Rest]]) when First =< Sec->
+    min([First|Rest]);
+min([_First|Rest]) -> min(Rest).
+
+
+nth(1, [First|_Rest]) ->First;
+nth(N, [_First|Rest]) when N>=1 -> nth(N-1, Rest).
+
+
+nthtail(0, List) -> List;
+nthtail(N, [_First|Rest]) when N>0 -> nthtail(N-1, Rest).
+
+
+for_partition(_Pred, Sat, NotSat, []) -> {Sat, NotSat};
+for_partition(Pred, Sat, NotSat, [First|Rest]) ->
+    case Pred(First) of
+        true ->
+            for_partition(Pred, [First|Sat], NotSat, Rest);
+        false ->
+            for_partition(Pred, Sat, [First|NotSat], Rest)
+    end.
+
+partition(Pred, List) ->
+    {Sat, NotSat} = for_partition(Pred, [], [], List),
+    {reverse(Sat), reverse(NotSat)}.
+
+
+prefix([], _L2) -> true;
+prefix([_F1|_R1], []) -> false;
+prefix([F1|R1], [F2|R2]) ->
+    case F1 =:= F2 of
+        true ->
+            prefix(R1, R2);
+        false ->
+            false
+    end.
