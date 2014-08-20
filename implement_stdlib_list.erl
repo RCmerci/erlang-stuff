@@ -41,7 +41,15 @@
          partition/2,
          prefix/2,
          reverse/1,
-         reverse/2]).
+         reverse/2,
+         seq/3,
+         seq/2,
+         sort/1,
+         sort/2,
+         split/2,
+         splitwith/2,
+         sublist/2,
+         sublist/3]).
 -export([get_reverse_list/2,
          for_merge/2]).
 
@@ -426,3 +434,54 @@ prefix([F1|R1], [F2|R2]) ->
         false ->
             false
     end.
+
+
+seq(From, To, Incr) when To<From-Incr, Incr>0 -> error(if_clause);
+seq(From, To, Incr) when To>From-Incr, Incr<0 -> error(if_clause);
+seq(From, To, Incr) when Incr==0, From/=To ->error(if_clause);
+seq(From, _To, Incr) when Incr==0 ->[From];
+seq(From, To, Incr) when Incr>0, From>To ->[];
+seq(From, To, Incr) when Incr<0, From<To ->[];
+seq(From, To, Incr) -> [From | seq(From+Incr, To, Incr)].
+
+seq(From, To) -> seq(From, To, 1).
+
+sort([])->[];
+sort([First|Rest]) ->
+    {Sat, NotSat} = partition(fun(A)->A<First end, Rest),
+    append([sort(Sat), [First], sort(NotSat)]).
+
+sort(_Fun, []) -> [];
+sort(Fun, [First|Rest]) ->
+    {Sat, NotSat} = partition(Fun, Rest),
+    append([sort(Sat), [First], sort(NotSat)]).
+
+
+split(1, []) -> error(badarg);
+split(0, List) -> {[], List};
+split(N, [First|Rest]) when N>=0 ->
+    {List2, List3} = split(N-1, Rest),
+    {[First|List2], List3}.
+
+
+splitwith(_Pred, []) -> {[],[]};
+splitwith(Pred, [First|Rest]) ->
+    case Pred(First) of
+        false ->
+            {[], [First|Rest]};
+        true ->
+            {List2, List3} = splitwith(Pred, Rest),
+            {[First|List2], List3}
+    end.
+
+
+
+sublist([], 1, _Len) ->[];
+sublist(_List, 1, 0) ->[];
+sublist([First|Rest], 1, Len) when Len>=0 ->
+    [First | sublist(Rest, 1, Len-1)];
+sublist([_First|Rest], Start, Len) when Start>1, Len>=0 ->
+    sublist(Rest, Start-1, Len).
+
+sublist(List, Len) when Len>=0 ->
+    sublist(List, 1, Len).
