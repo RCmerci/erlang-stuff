@@ -49,7 +49,13 @@
          split/2,
          splitwith/2,
          sublist/2,
-         sublist/3]).
+         sublist/3,
+         subtract/2,
+         suffix/2,
+         sum/1,
+         takewhile/2,
+         ukeymerge/3,
+         ukeysort/2]).
 -export([get_reverse_list/2,
          for_merge/2]).
 
@@ -453,7 +459,7 @@ sort([First|Rest]) ->
 
 sort(_Fun, []) -> [];
 sort(Fun, [First|Rest]) ->
-    {Sat, NotSat} = partition(Fun, Rest),
+    {Sat, NotSat} = partition(fun(A)->Fun(A, First) end, Rest),
     append([sort(Sat), [First], sort(NotSat)]).
 
 
@@ -485,3 +491,68 @@ sublist([_First|Rest], Start, Len) when Start>1, Len>=0 ->
 
 sublist(List, Len) when Len>=0 ->
     sublist(List, 1, Len).
+
+
+subtract([], _List) -> [];
+subtract(List, []) -> List;
+subtract(List, [F2|R2]) ->
+    subtract(delete(F2, List), R2).
+
+
+for_suffix([], _List2) -> true;
+for_suffix([_First|_Rest], []) -> false;
+for_suffix([F1|R1], [F2|R2]) ->
+    case F1 == F2 of
+        true ->
+            for_suffix(R1, R2);
+        false ->
+            false
+    end.
+
+suffix(List1, List2) ->
+    Rlist1 = reverse(List1),
+    Rlist2 = reverse(List2),
+    for_suffix(Rlist1, Rlist2).
+
+
+sum([]) -> 0;
+sum(List) ->
+    foldl(fun(A,Acc)->A+Acc end, 0, List).
+
+
+takewhile(_Pred, []) -> [];
+takewhile(Pred, [First|Rest]) ->
+    case Pred(First) of
+        true ->
+            [First | takewhile(Pred, Rest)];
+        false ->
+            []
+    end.
+
+
+
+ukeymerge(N, [],List2) when N>=1 -> List2;
+ukeymerge(N, List1, []) when N>=1 -> List1;
+ukeymerge(N, [F1|R1], [F2|R2]) when N>=1, is_tuple(F1), is_tuple(F2) ->
+    case element(N, F1) =< element(N, F2) of
+        true ->
+            case element(N ,F1) == element(N, F2) of
+                true ->
+                    [F1 | ukeymerge(N, R1, R2)];
+                false ->
+                    [F1 | ukeymerge(N, R1, [F2|R2])]
+            end;
+        false ->
+            [F2 | ukeymerge(N, [F1|R1], R2)]
+    end.
+
+
+for_ukeysort(_Before, [], Res) -> Res;
+for_ukeysort(Before, [First|Rest], Res) when Before==First->
+    for_ukeysort(Before, Rest, Res);
+for_ukeysort(_Before, [First|Rest], Res) ->
+    for_ukeysort(First, Rest, append(Res, [First])).
+ukeysort(_N, [])->[];
+ukeysort(N, List) when N>=1 ->
+    [SF|SR] = sort(fun(A,B)->element(N, A)=<element(N ,B) end, List),
+    for_ukeysort(SF, SR, [SF]).
